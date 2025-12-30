@@ -1,0 +1,26 @@
+name: vendor_app
+description: Silver Taxi Vendor App - Flutter client with all vendor APIs wired
+publish_to: "none"
+version: 1.0.0+1
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  shared_preferences: ^2.2.2
+  cupertino_icons: ^1.0.8
+  socket_io_client: ^2.0.3+1
+  flutter_local_notifications: ^18.0.1
+  firebase_core: ^3.8.1
+  firebase_messaging: ^15.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+

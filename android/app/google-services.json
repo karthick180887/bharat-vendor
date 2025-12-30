@@ -1,0 +1,29 @@
+{
+    "project_info": {
+        "project_number": "138490718264",
+        "project_id": "cabigo-871b4",
+        "storage_bucket": "cabigo-871b4.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:138490718264:android:a3a1a87cf9b90463a19ecd",
+                "android_client_info": {
+                    "package_name": "com.cabigo.vendor"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyAhje_Mj9Fk8zOKkic-Rnf6ZyNaIAdSPyY"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}
