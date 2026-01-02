@@ -23,6 +23,44 @@ class VendorApiClient extends BaseApiClient {
     });
   }
 
+  /// POST /vendor/auth/forgot-password
+  /// Request OTP for password reset
+  Future<ApiResult> requestPasswordReset({
+    String? email,
+    String? phone,
+  }) {
+    return post('/vendor/auth/forgot-password', {
+      if (email != null) 'email': email,
+      if (phone != null) 'phone': phone,
+    });
+  }
+
+  /// POST /vendor/auth/verify-reset-otp
+  /// Verify OTP and get reset token
+  Future<ApiResult> verifyResetOtp({
+    String? email,
+    String? phone,
+    required String otp,
+  }) {
+    return post('/vendor/auth/verify-reset-otp', {
+      if (email != null) 'email': email,
+      if (phone != null) 'phone': phone,
+      'otp': otp,
+    });
+  }
+
+  /// POST /vendor/auth/reset-password
+  /// Reset password with reset token
+  Future<ApiResult> resetPassword({
+    required String resetToken,
+    required String newPassword,
+  }) {
+    return post('/vendor/auth/reset-password', {
+      'resetToken': resetToken,
+      'newPassword': newPassword,
+    });
+  }
+
   // =========================
   // Vendor profile & config
   // =========================

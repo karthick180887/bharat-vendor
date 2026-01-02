@@ -1,29 +1,24 @@
-import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../api_client.dart';
 import '../../design_system.dart';
 import '../../widgets/gradient_button.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../main_layout.dart';
-import '../../services/firebase_messaging_service.dart';
-import 'forgot_password_screen.dart';
+import 'verify_otp_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailPhoneController = TextEditingController();
-  final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _obscurePassword = true;
   String? _errorMessage;
+  String? _successMessage;
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -50,77 +45,52 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _animController.dispose();
     _emailPhoneController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleRequestOtp() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _successMessage = null;
     });
 
     try {
       final input = _emailPhoneController.text.trim();
-      final password = _passwordController.text;
       final isEmail = input.contains('@');
 
       final api = VendorApiClient();
-      final result = await api.login(
+      final result = await api.requestPasswordReset(
         email: isEmail ? input : null,
         phone: isEmail ? null : input,
-        password: password,
       );
 
       if (result.statusCode == 200 || result.statusCode == 201) {
-        if (result.data is! Map<String, dynamic>) {
-          setState(() => _errorMessage = "Unexpected response format");
-          return;
-        }
-        final responseData = result.data as Map<String, dynamic>;
-        final innerData = responseData['data'] as Map<String, dynamic>?;
-        final token = (innerData?['token'] ?? responseData['token']) as String?;
+        final data = result.data as Map<String, dynamic>?;
+        final sentTo = data?['data']?['sentTo'] ?? 'your phone/email';
+        
+        setState(() {
+          _successMessage = 'OTP sent to $sentTo';
+        });
 
-        if (token != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('vendor_token', token);
-
-          try {
-            final parts = token.split('.');
-            if (parts.length == 3) {
-              final payload = parts[1];
-              final normalized = base64Url.normalize(payload);
-              final resp = utf8.decode(base64Url.decode(normalized));
-              final payloadMap = json.decode(resp);
-
-              if (payloadMap is Map<String, dynamic>) {
-                final adminId = payloadMap['adminId']?.toString();
-                final userData = payloadMap['userData'];
-                final vendorId = userData is Map ? userData['id']?.toString() : null;
-
-                if (adminId != null) await prefs.setString('admin_id', adminId);
-                if (vendorId != null) await prefs.setString('vendor_id', vendorId);
-                
-                // Register FCM token now that we have credentials
-                await FirebaseMessagingService().registerToken();
-              }
-            }
-          } catch (e) {
-            debugPrint('Error decoding token: $e');
-          }
-
+        // Navigate to OTP verification screen
+        if (mounted) {
+          await Future.delayed(const Duration(milliseconds: 500));
           if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const MainLayout()),
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => VerifyOtpScreen(
+                  emailOrPhone: input,
+                  isEmail: isEmail,
+                ),
+              ),
             );
           }
-        } else {
-          setState(() => _errorMessage = "Login succeeded but no token returned.");
         }
       } else {
-        setState(() => _errorMessage = result.message ?? "Login failed");
+        setState(() => _errorMessage = result.message ?? "Failed to send OTP");
       }
     } catch (e) {
       setState(() => _errorMessage = "An error occurred: $e");
@@ -151,7 +121,20 @@ class _LoginScreenState extends State<LoginScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Logo and Header
+                        // Back Button
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(
+                              Icons.arrow_back_ios_rounded,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Lock Icon
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
@@ -166,14 +149,14 @@ class _LoginScreenState extends State<LoginScreen>
                             ],
                           ),
                           child: const Icon(
-                            Icons.local_taxi_rounded,
+                            Icons.lock_reset_rounded,
                             size: 48,
                             color: Colors.white,
                           ),
                         ),
                         const SizedBox(height: 32),
                         const Text(
-                          'Welcome Back',
+                          'Forgot Password?',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -182,7 +165,8 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Sign in to your vendor account',
+                          'Enter your email or phone number to receive an OTP',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 15,
                             color: Colors.white.withValues(alpha: 0.7),
@@ -240,11 +224,79 @@ class _LoginScreenState extends State<LoginScreen>
                                         ),
                                       ),
 
+                                    // Success Message
+                                    if (_successMessage != null)
+                                      Container(
+                                        padding: const EdgeInsets.all(14),
+                                        margin: const EdgeInsets.only(bottom: 20),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Colors.green.withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.check_circle_outline,
+                                                color: Colors.green, size: 20),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                _successMessage!,
+                                                style: const TextStyle(
+                                                  color: Colors.green,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
                                     // Email/Phone Field
-                                    _buildTextField(
+                                    TextFormField(
                                       controller: _emailPhoneController,
-                                      label: 'Email or Phone',
-                                      icon: Icons.person_outline_rounded,
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 15),
+                                      keyboardType: TextInputType.emailAddress,
+                                      decoration: InputDecoration(
+                                        labelText: 'Email or Phone',
+                                        labelStyle: TextStyle(
+                                            color: Colors.white.withValues(alpha: 0.6),
+                                            fontSize: 14),
+                                        prefixIcon: const Icon(
+                                          Icons.person_outline_rounded,
+                                          color: Colors.white60,
+                                          size: 20,
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.white.withValues(alpha: 0.08),
+                                        contentPadding: const EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 16),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                          borderSide: BorderSide(
+                                              color:
+                                                  Colors.white.withValues(alpha: 0.15)),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                          borderSide: const BorderSide(
+                                              color: AppColors.accent, width: 1.5),
+                                        ),
+                                        errorBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                          borderSide:
+                                              const BorderSide(color: AppColors.error),
+                                        ),
+                                        errorStyle:
+                                            const TextStyle(color: Colors.redAccent),
+                                      ),
                                       validator: (value) {
                                         if (value == null || value.trim().isEmpty) {
                                           return 'Please enter your email or phone';
@@ -252,54 +304,22 @@ class _LoginScreenState extends State<LoginScreen>
                                         return null;
                                       },
                                     ),
-                                    const SizedBox(height: 18),
-
-                                    // Password Field
-                                    _buildTextField(
-                                      controller: _passwordController,
-                                      label: 'Password',
-                                      icon: Icons.lock_outline_rounded,
-                                      obscureText: _obscurePassword,
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _obscurePassword
-                                              ? Icons.visibility_off_rounded
-                                              : Icons.visibility_rounded,
-                                          color: Colors.white60,
-                                          size: 20,
-                                        ),
-                                        onPressed: () => setState(
-                                            () => _obscurePassword = !_obscurePassword),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Please enter your password';
-                                        }
-                                        return null;
-                                      },
-                                    ),
                                     const SizedBox(height: 28),
 
-                                    // Login Button
+                                    // Send OTP Button
                                     GradientButton(
-                                      text: 'Sign In',
-                                      icon: Icons.login_rounded,
+                                      text: 'Send OTP',
+                                      icon: Icons.send_rounded,
                                       isLoading: _isLoading,
-                                      onPressed: _handleLogin,
+                                      onPressed: _handleRequestOtp,
                                     ),
                                     const SizedBox(height: 16),
 
-                                    // Forgot Password Link
+                                    // Back to Login Link
                                     TextButton(
-                                      onPressed: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => const ForgotPasswordScreen(),
-                                          ),
-                                        );
-                                      },
+                                      onPressed: () => Navigator.of(context).pop(),
                                       child: Text(
-                                        'Forgot password?',
+                                        'Back to Login',
                                         style: TextStyle(
                                           color: Colors.white.withValues(alpha: 0.7),
                                           fontSize: 14,
@@ -321,48 +341,6 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool obscureText = false,
-    Widget? suffixIcon,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      style: const TextStyle(color: Colors.white, fontSize: 15),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
-        prefixIcon: Icon(icon, color: Colors.white60, size: 20),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.08),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-        errorStyle: const TextStyle(color: Colors.redAccent),
-      ),
-      validator: validator,
     );
   }
 }
