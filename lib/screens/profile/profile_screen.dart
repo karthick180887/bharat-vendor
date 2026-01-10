@@ -34,8 +34,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (mounted) {
           setState(() {
             final body = res.data as Map<String, dynamic>;
-            if (body.containsKey('data') && body['data'] is Map && body['data'].containsKey('vendor')) {
-               _profile = body['data']['vendor'];
+            if (body.containsKey('data') && body['data'] is Map) {
+              final data = body['data'] as Map<String, dynamic>;
+              if (data.containsKey('vendor')) {
+                _profile = data['vendor'];
+              } else {
+                _profile = data;
+              }
             } else if (body.containsKey('vendor')) {
                _profile = body['vendor'];
             } else {
@@ -73,47 +78,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Peppy Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(top: 60, bottom: 40, left: 24, right: 24),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
+      body: RefreshIndicator(
+        onRefresh: _fetchProfile,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              // Peppy Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 60, bottom: 40, left: 24, right: 24),
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                     Container(
+                       padding: const EdgeInsets.all(4),
+                       decoration: const BoxDecoration(
+                         shape: BoxShape.circle,
+                         color: Colors.white,
+                       ),
+                       child: const CircleAvatar(
+                        radius: 48,
+                        backgroundColor: AppColors.primaryLight,
+                        child: Icon(Icons.person, size: 50, color: AppColors.primary),
+                                       ),
+                     ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _profile?['name'] ?? 'Vendor',
+                      style: AppTextStyles.h1.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _profile?['phone'] ?? '',
+                      style: AppTextStyles.bodyMedium.copyWith(color: Colors.white.withAlpha(230)),
+                    ),
+                  ],
                 ),
               ),
-              child: Column(
-                children: [
-                   Container(
-                     padding: const EdgeInsets.all(4),
-                     decoration: const BoxDecoration(
-                       shape: BoxShape.circle,
-                       color: Colors.white,
-                     ),
-                     child: const CircleAvatar(
-                      radius: 48,
-                      backgroundColor: AppColors.primaryLight,
-                      child: Icon(Icons.person, size: 50, color: AppColors.primary),
-                                     ),
-                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _profile?['name'] ?? 'Vendor Name',
-                    style: AppTextStyles.h1.copyWith(color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _profile?['phone'] ?? '',
-                    style: AppTextStyles.bodyMedium.copyWith(color: Colors.white.withAlpha(230)),
-                  ),
-                ],
-              ),
-            ),
             
             const SizedBox(height: 24),
 
@@ -122,52 +130,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _ProfileMenuCard(
+                  _ProfileTile(
                     title: 'Payouts',
-                    icon: Icons.account_balance_wallet_outlined,
+                    icon: Icons.account_balance_wallet_rounded,
+                    color: AppColors.success,
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const PayoutScreen()));
                     },
                   ),
-                  const SizedBox(height: 16),
-                  _ProfileMenuCard(
+                  _ProfileTile(
                     title: 'Bank Details',
-                    icon: Icons.account_balance_outlined,
-                    onTap: () {}, // Placeholder for now
+                    icon: Icons.account_balance_rounded,
+                    color: AppColors.primary,
+                    onTap: () {}, // Placeholder
                   ),
-                  const SizedBox(height: 16),
-                  _ProfileMenuCard(
+                  _ProfileTile(
                     title: 'Help & Support',
-                    icon: Icons.headset_mic_outlined,
+                    icon: Icons.headset_mic_rounded,
+                    color: AppColors.warning,
                     onTap: () {},
                   ),
-                  const SizedBox(height: 32),
                   
-                  // Logout Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _logout,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error.withAlpha(26),
-                        foregroundColor: AppColors.error,
-                        elevation: 0,
-                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.logout_rounded),
-                          const SizedBox(width: 12),
-                          Text('Logout', style: AppTextStyles.h3.copyWith(color: AppColors.error)),
-                        ],
-                      ),
-                    ),
+                  const SizedBox(height: 24),
+                  
+                  // Logout Tile
+                  _ProfileTile(
+                    title: 'Logout',
+                    icon: Icons.logout_rounded,
+                    color: AppColors.error,
+                    isLogout: true,
+                    onTap: _logout,
                   ),
-
+                  
+                  const SizedBox(height: 20),
+                  Text(
+                    'Version 1.0.0',
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textLight),
+                  ),
                 ],
               ),
             ),
@@ -175,56 +174,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
-class _ProfileMenuCard extends StatelessWidget {
+class _ProfileTile extends StatelessWidget {
   final String title;
   final IconData icon;
+  final Color color;
   final VoidCallback onTap;
+  final bool isLogout;
 
-  const _ProfileMenuCard({
+  const _ProfileTile({
     required this.title,
     required this.icon,
+    required this.color,
     required this.onTap,
+    this.isLogout = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isLogout ? color.withAlpha(0x0D) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: isLogout ? [] : [
           BoxShadow(
-            color: Colors.black.withAlpha(13),
+            color: Colors.black.withAlpha(0x08),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
+        border: isLogout ? Border.all(color: color.withAlpha(0x1A)) : null,
       ),
       child: Material(
         color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryLight.withAlpha(128),
+                    color: color.withAlpha(0x1A),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: AppColors.primary, size: 24),
+                  child: Icon(icon, color: color, size: 24),
                 ),
                 const SizedBox(width: 16),
-                Text(title, style: AppTextStyles.h3),
+                Text(
+                  title,
+                  style: AppTextStyles.h3.copyWith(
+                    color: isLogout ? color : AppColors.textMain,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const Spacer(),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 18, color: AppColors.textSecondary),
+                if (!isLogout)
+                  Icon(Icons.chevron_right_rounded, size: 24, color: AppColors.textLight.withAlpha(0x80)),
               ],
             ),
           ),

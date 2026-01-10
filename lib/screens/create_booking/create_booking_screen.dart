@@ -405,6 +405,9 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
       if (_adminId != null) payload['adminId'] = _adminId;
       if (_vendorId != null) payload['vendorId'] = _vendorId;
       payload['paymentMethod'] = payload['paymentMethod'] ?? 'Cash';
+      // Ensure name and phone are up to date from controllers
+      payload['name'] = _nameController.text;
+      payload['phone'] = _phoneController.text;
 
       final res = await _api.createBooking(
         token: _token!,

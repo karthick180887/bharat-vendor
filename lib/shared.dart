@@ -23,7 +23,7 @@ class BaseApiClient {
       : baseUrl = baseUrl ??
             const String.fromEnvironment(
               'API_BASE_URL',
-              defaultValue: 'https://api.cabigo.in',
+              defaultValue: 'https://api.bharatonewaytaxi.com',
             );
 
   final String baseUrl;

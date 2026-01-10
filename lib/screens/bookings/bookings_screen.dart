@@ -19,6 +19,7 @@ class _BookingsScreenState extends State<BookingsScreen>
   late TabController _tabController;
 
   final _tabs = [
+    _TabInfo('All', AppColors.primary, Icons.list_alt_rounded),
     _TabInfo('Pending', AppColors.warning, Icons.hourglass_top_rounded),
     _TabInfo('Not Started', AppColors.primary, Icons.schedule_rounded),
     _TabInfo('Started', AppColors.success, Icons.play_circle_rounded),
@@ -114,8 +115,36 @@ class _BookingsScreenState extends State<BookingsScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: _tabs.map((t) => _BookingList(status: t.label)).toList(),
+        children: _tabs.map((t) => BookingList(status: t.label)).toList(),
       ),
+    );
+  }
+}
+
+class SingleBookingScreen extends StatelessWidget {
+  final String status;
+  final String title;
+
+  const SingleBookingScreen({
+    super.key,
+    required this.status,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textMain),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(title, style: AppTextStyles.h2),
+      ),
+      body: BookingList(status: status),
     );
   }
 }
@@ -127,15 +156,15 @@ class _TabInfo {
   _TabInfo(this.label, this.color, this.icon);
 }
 
-class _BookingList extends StatefulWidget {
+class BookingList extends StatefulWidget {
   final String status;
-  const _BookingList({required this.status});
+  const BookingList({super.key, required this.status});
 
   @override
-  State<_BookingList> createState() => _BookingListState();
+  State<BookingList> createState() => _BookingListState();
 }
 
-class _BookingListState extends State<_BookingList>
+class _BookingListState extends State<BookingList>
     with AutomaticKeepAliveClientMixin {
   final _api = VendorApiClient();
   bool _isLoading = true;
@@ -167,6 +196,9 @@ class _BookingListState extends State<_BookingList>
 
       String backendStatus = '';
       switch (widget.status) {
+        case 'All':
+          backendStatus = ''; // Fetch all
+          break;
         case 'Pending':
           backendStatus = 'new-bookings';
           break;
@@ -183,7 +215,7 @@ class _BookingListState extends State<_BookingList>
           backendStatus = 'cancelled';
           break;
         default:
-          backendStatus = 'new-bookings';
+          backendStatus = '';
       }
 
       final res = await _api.getSpecificBookings(

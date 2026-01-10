@@ -56,6 +56,10 @@ class VendorNotification {
         return 'Trip Started';
       case 'TRIP_COMPLETED':
         return 'Trip Completed';
+      case 'INVOICE_READY':
+        return 'Invoice Ready';
+      case 'CUSTOM_NOTIFICATION':
+        return 'Notification';
       default:
         return 'Booking Update';
     }
@@ -69,6 +73,10 @@ class VendorNotification {
         return 'Trip #$bookingId has started. Driver is on the way.';
       case 'TRIP_COMPLETED':
         return 'Trip #$bookingId has been completed successfully.';
+      case 'INVOICE_READY':
+        return 'Invoice for booking #$bookingId is ready.';
+      case 'CUSTOM_NOTIFICATION':
+        return raw['message']?.toString() ?? 'You have a new notification.';
       default:
         return 'Booking #$bookingId status: $status';
     }
@@ -83,6 +91,7 @@ class VendorSocketService {
 
   io.Socket? _socket;
   String? _vendorId;
+  String? _authToken;
   bool _isConnected = false;
   final _localNotifications = LocalNotificationService();
 
@@ -113,6 +122,7 @@ class VendorSocketService {
         debugPrint('[VendorSocket] No token or vendorId found');
         return;
       }
+      _authToken = token;
 
       // Get socket URL from shared config or use default
       const socketUrl = 'https://api.cabigo.in';
@@ -145,10 +155,13 @@ class VendorSocketService {
       _isConnected = true;
       _connectionController.add(true);
 
-      // Join vendor-specific room
-      if (_vendorId != null) {
-        _socket!.emit('join_room', 'vendor_$_vendorId');
-        debugPrint('[VendorSocket] Joined room: vendor_$_vendorId');
+      if (_authToken != null && _authToken!.isNotEmpty) {
+        final payload = <String, dynamic>{'token': _authToken};
+        if (_vendorId != null && _vendorId!.isNotEmpty) {
+          payload['userId'] = _vendorId;
+        }
+        _socket!.emit('vendor_authenticate', payload);
+        debugPrint('[VendorSocket] Sent vendor_authenticate');
       }
     });
 
@@ -203,6 +216,8 @@ class VendorSocketService {
       if (type == 'DRIVER_ACCEPTED' || 
           type == 'TRIP_STARTED' || 
           type == 'TRIP_COMPLETED' ||
+          type == 'INVOICE_READY' ||
+          type == 'CUSTOM_NOTIFICATION' ||
           type == 'VENDOR_TRIP_UPDATE') {
         
         final notification = VendorNotification.fromMap({

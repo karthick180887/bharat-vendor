@@ -160,10 +160,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                       child: Text('Booking Status', style: AppTextStyles.h2),
                     ),
                   ),
-                  // Summary Grid
+                  // Summary List
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    sliver: _buildSummaryGrid(),
+                    sliver: _buildSummaryList(),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 100)),
                 ],
@@ -325,68 +325,63 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildSummaryGrid() {
+  Widget _buildSummaryList() {
     final items = [
       _SummaryItem(
-        title: 'Total',
+        title: 'All Bookings',
         count: _counts?['all'] ?? 0,
         icon: Icons.confirmation_number_rounded,
         color: AppColors.primary,
-        onTap: () => _navigateToBookings(0),
+        onTap: () => _navigateToBookings('All', 'All Bookings'),
       ),
       _SummaryItem(
         title: 'Not Started',
         count: _counts?['not-started'] ?? 0,
         icon: Icons.schedule_rounded,
         color: AppColors.warning,
-        onTap: () => _navigateToBookings(1),
+        onTap: () => _navigateToBookings('Not Started', 'Not Started'),
       ),
       _SummaryItem(
         title: 'Started',
         count: _counts?['started'] ?? 0,
         icon: Icons.play_circle_rounded,
         color: AppColors.success,
-        onTap: () => _navigateToBookings(2),
+        onTap: () => _navigateToBookings('Started', 'Started'),
       ),
       _SummaryItem(
         title: 'Completed',
         count: _counts?['completed'] ?? 0,
         icon: Icons.check_circle_rounded,
         color: AppColors.info,
-        onTap: () => _navigateToBookings(3),
+        onTap: () => _navigateToBookings('Completed', 'Completed'),
       ),
       _SummaryItem(
         title: 'Cancelled',
         count: _counts?['cancelled'] ?? 0,
         icon: Icons.cancel_rounded,
         color: AppColors.error,
-        onTap: () => _navigateToBookings(4),
+        onTap: () => _navigateToBookings('Cancelled', 'Cancelled'),
       ),
     ];
 
-    return SliverGrid(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 14,
-        crossAxisSpacing: 14,
-        childAspectRatio: 1.15,
-      ),
+    return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
+          final item = items[index];
           return TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: 1),
-            duration: Duration(milliseconds: 400 + (index * 100)),
+            duration: Duration(milliseconds: 300 + (index * 100)),
             curve: Curves.easeOutCubic,
             builder: (context, value, child) {
               return Opacity(
                 opacity: value,
                 child: Transform.translate(
-                  offset: Offset(0, 20 * (1 - value)),
+                  offset: Offset(20 * (1 - value), 0),
                   child: child,
                 ),
               );
             },
-            child: _buildSummaryCard(items[index]),
+            child: _buildSummaryTile(item, isLast: index == items.length - 1),
           );
         },
         childCount: items.length,
@@ -394,12 +389,19 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildSummaryCard(_SummaryItem item) {
+  Widget _buildSummaryTile(_SummaryItem item, {bool isLast = false}) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: AppColors.cardShadow,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -408,32 +410,56 @@ class _DashboardScreenState extends State<DashboardScreen>
           onTap: item.onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
               children: [
+                // Icon Box
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: item.color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(item.icon, color: item.color, size: 20),
+                  child: Icon(item.icon, color: item.color, size: 22),
                 ),
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(width: 16),
+                
+                // Title
+                Expanded(
+                  child: Text(
+                    item.title,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+
+                // Count Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: item.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      AnimatedCounter(
-                        value: item.count,
-                        style: AppTextStyles.h1.copyWith(fontSize: 24),
+                      Text(
+                        '${item.count}',
+                        style: TextStyle(
+                          color: item.color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
-                      Text(item.title, style: AppTextStyles.bodySmall, overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
+                
+                const SizedBox(width: 12),
+                // Arrow
+                Icon(Icons.chevron_right_rounded, color: AppColors.textLight.withValues(alpha: 0.5), size: 20),
               ],
             ),
           ),
@@ -442,10 +468,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  void _navigateToBookings(int index) {
+  void _navigateToBookings(String status, String title) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => BookingsScreen(initialIndex: index)),
+      MaterialPageRoute(
+        builder: (_) => SingleBookingScreen(status: status, title: title),
+      ),
     );
   }
 }

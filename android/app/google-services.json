@@ -1,21 +1,59 @@
 {
     "project_info": {
-        "project_number": "138490718264",
-        "project_id": "cabigo-871b4",
-        "storage_bucket": "cabigo-871b4.firebasestorage.app"
+        "project_number": "763772726632",
+        "project_id": "bharatoneway-9787a",
+        "storage_bucket": "bharatoneway-9787a.firebasestorage.app"
     },
     "client": [
         {
             "client_info": {
-                "mobilesdk_app_id": "1:138490718264:android:a3a1a87cf9b90463a19ecd",
+                "mobilesdk_app_id": "1:763772726632:android:8d96b9c6df2433a9bd3add",
                 "android_client_info": {
-                    "package_name": "com.cabigo.vendor"
+                    "package_name": "com.bharatonewaytaxi.customer"
                 }
             },
             "oauth_client": [],
             "api_key": [
                 {
-                    "current_key": "AIzaSyAhje_Mj9Fk8zOKkic-Rnf6ZyNaIAdSPyY"
+                    "current_key": "AIzaSyDqKWVm7oWgiJuuVrF4lAgJ0eYqDJgceVM"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        },
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:763772726632:android:708e0713eaeb06f0bd3add",
+                "android_client_info": {
+                    "package_name": "com.bharatonewaytaxi.driver"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyDqKWVm7oWgiJuuVrF4lAgJ0eYqDJgceVM"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        },
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:763772726632:android:5aa7cb35f902d7d2bd3add",
+                "android_client_info": {
+                    "package_name": "com.bharatonewaytaxi.vendor"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyDqKWVm7oWgiJuuVrF4lAgJ0eYqDJgceVM"
                 }
             ],
             "services": {

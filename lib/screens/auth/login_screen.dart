@@ -97,8 +97,7 @@ class _LoginScreenState extends State<LoginScreen>
 
               if (payloadMap is Map<String, dynamic>) {
                 final adminId = payloadMap['adminId']?.toString();
-                final userData = payloadMap['userData'];
-                final vendorId = userData is Map ? userData['id']?.toString() : null;
+                final vendorId = payloadMap['vendorId']?.toString();
 
                 if (adminId != null) await prefs.setString('admin_id', adminId);
                 if (vendorId != null) await prefs.setString('vendor_id', vendorId);
@@ -165,10 +164,20 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.local_taxi_rounded,
-                            size: 48,
-                            color: Colors.white,
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/icon/logo.jpeg',
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.local_taxi_rounded,
+                                  size: 48,
+                                  color: Colors.white,
+                                );
+                              },
+                            ),
                           ),
                         ),
                         const SizedBox(height: 32),

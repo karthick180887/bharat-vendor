@@ -340,7 +340,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        notification.raw['message'] ?? notification.message, // Prefer DB message
+                        notification.raw['message'] ?? notification.raw['description'] ?? notification.message, // Prefer DB message
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
                         ),
