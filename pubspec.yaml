@@ -13,8 +13,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   socket_io_client: ^2.0.3+1
   flutter_local_notifications: ^18.0.1
-  firebase_core: ^3.8.1
-  firebase_messaging: ^15.1.6
+  firebase_core: ^4.3.0
+  firebase_messaging: ^16.1.0
 
 dev_dependencies:
   flutter_test:
