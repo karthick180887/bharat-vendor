@@ -1,6 +1,6 @@
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../api_client.dart';
 import '../../design_system.dart';
 
@@ -42,8 +42,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Request sent to all drivers!'), backgroundColor: AppColors.success),
           );
-          // Update local status if needed, though backend might not change it immediately to "assigned"
-          // unless a driver accepts. But we can reflect that "Assigning..." logic if backend supports it.
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed: ${res.message}'), backgroundColor: AppColors.error),
@@ -61,13 +59,94 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     }
   }
 
+  /// Default admin phone number
+  static const String _defaultAdminPhone = '+919342374700';
+
+  /// Returns the contact phone number based on booking source:
+  /// - Customer App bookings (createdBy: 'user'/'customer') → Admin: +91 93423 74700
+  /// - Admin Dashboard bookings (createdBy: 'admin') → Admin: +91 93423 74700
+  /// - Vendor bookings (createdBy: 'vendor') → Vendor's phone number
+  /// - Fallback → Admin number
+  String _getContactPhone(Map<String, dynamic> booking) {
+    final createdBy = _readCreatedBy(booking);
+    
+    // Customer App bookings → Admin number
+    if (createdBy == 'user' || createdBy == 'customer') {
+      return _defaultAdminPhone;
+    }
+    
+    // Admin Dashboard bookings → Admin number
+    if (createdBy == 'admin') {
+      return _defaultAdminPhone;
+    }
+    
+    // Vendor bookings → Vendor's phone number
+    if (createdBy == 'vendor') {
+      final vendorPhone = _readVendorPhone(booking);
+      if (vendorPhone.isNotEmpty) {
+        return vendorPhone;
+      }
+    }
+
+    // Default fallback → Admin number
+    return _defaultAdminPhone;
+  }
+
+  String _readCreatedBy(Map<String, dynamic> booking) {
+    final value = booking['createdBy'] ?? booking['created_by'];
+    if (value == null) return '';
+    return value.toString().trim().toLowerCase();
+  }
+
+  String _readVendorPhone(Map<String, dynamic> booking) {
+    // Try vendor object first
+    final vendor = booking['vendor'];
+    if (vendor is Map) {
+      final phone = vendor['phone'] ?? vendor['contactNumber'] ?? vendor['mobile'];
+      if (phone != null && phone.toString().trim().isNotEmpty) {
+        return phone.toString().trim();
+      }
+    }
+    
+    // Try direct vendorPhone field
+    final vendorPhone = booking['vendorPhone'] ?? booking['vendor_phone'];
+    if (vendorPhone != null && vendorPhone.toString().trim().isNotEmpty) {
+      return vendorPhone.toString().trim();
+    }
+    
+    // Try vendorContact field
+    final vendorContact = booking['vendorContact'] ?? booking['vendor_contact'];
+    if (vendorContact is Map) {
+      final phone = vendorContact['phone'] ?? vendorContact['mobile'];
+      if (phone != null && phone.toString().trim().isNotEmpty) {
+        return phone.toString().trim();
+      }
+    }
+    if (vendorContact is String && vendorContact.trim().isNotEmpty) {
+      return vendorContact.trim();
+    }
+    
+    return '';
+  }
+
+  Future<void> _callContact() async {
+    final phone = _getContactPhone(_booking);
+    final uri = Uri(scheme: 'tel', path: phone);
+    
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to make phone call')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = _booking['status'] ?? 'Unknown';
-    // Logic for showing "Assign" button: 
-    // Show if 'Booking Confirmed' (assuming this is the initial state before assignment)
-    // or 'Pending' if that's a valid state. 
-    // And if no driver is currently assigned.
     final canAssign = (status == 'Booking Confirmed' || status == 'Pending') && 
                       (_booking['driverId'] == null || _booking['driverId'] == '');
 
@@ -197,6 +276,23 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                     ],
                   ),
                 ),
+
+            // Contact Admin Button
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: _callContact,
+                icon: const Icon(Icons.phone),
+                label: const Text('Contact Admin'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
           ],
         ),
       ),
