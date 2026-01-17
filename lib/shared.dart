@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -19,14 +20,16 @@ class ApiResult {
 }
 
 class BaseApiClient {
-  BaseApiClient({String? baseUrl})
+  BaseApiClient({String? baseUrl, Duration? timeout})
       : baseUrl = baseUrl ??
             const String.fromEnvironment(
               'API_BASE_URL',
               defaultValue: 'https://api.bharatonewaytaxi.com',
-            );
+            ),
+        _timeout = timeout ?? const Duration(seconds: 20);
 
   final String baseUrl;
+  final Duration _timeout;
 
   Future<ApiResult> get(
     String path, {
@@ -133,8 +136,8 @@ class BaseApiClient {
         request.body = json.encode(body);
       }
 
-      final streamed = await client.send(request);
-      final response = await http.Response.fromStream(streamed);
+      final streamed = await client.send(request).timeout(_timeout);
+      final response = await http.Response.fromStream(streamed).timeout(_timeout);
       final parsed = _parseBody(response.body);
 
       return ApiResult(
@@ -142,6 +145,11 @@ class BaseApiClient {
         data: parsed,
         message: _extractMessage(parsed),
         headers: response.headers,
+      );
+    } on TimeoutException {
+      return const ApiResult(
+        statusCode: 0,
+        message: 'Request timed out. Please try again.',
       );
     } catch (e) {
       return ApiResult(statusCode: 0, message: e.toString());

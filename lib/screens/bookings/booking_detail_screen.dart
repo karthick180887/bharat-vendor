@@ -63,8 +63,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   static const String _defaultAdminPhone = '+919342374700';
 
   /// Returns the contact phone number based on booking source:
-  /// - Customer App bookings (createdBy: 'user'/'customer') → Admin: +91 93423 74700
-  /// - Admin Dashboard bookings (createdBy: 'admin') → Admin: +91 93423 74700
+  /// - Customer App bookings (createdBy: 'user'/'customer') → Admin: +91 99442 26010
+  /// - Admin Dashboard bookings (createdBy: 'admin') → Admin: +91 99442 26010
   /// - Vendor bookings (createdBy: 'vendor') → Vendor's phone number
   /// - Fallback → Admin number
   String _getContactPhone(Map<String, dynamic> booking) {

@@ -61,6 +61,25 @@
                     "other_platform_oauth_client": []
                 }
             }
+        },
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:763772726632:android:5aa7cb35f902d7d2bd3add",
+                "android_client_info": {
+                    "package_name": "com.cabigo.vendor"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyDqKWVm7oWgiJuuVrF4lAgJ0eYqDJgceVM"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
         }
     ],
     "configuration_version": "1"

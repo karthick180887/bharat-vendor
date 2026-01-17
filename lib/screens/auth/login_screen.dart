@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -102,8 +103,8 @@ class _LoginScreenState extends State<LoginScreen>
                 if (adminId != null) await prefs.setString('admin_id', adminId);
                 if (vendorId != null) await prefs.setString('vendor_id', vendorId);
                 
-                // Register FCM token now that we have credentials
-                await FirebaseMessagingService().registerToken();
+                // Register FCM token in the background to avoid blocking login.
+                unawaited(FirebaseMessagingService().registerToken());
               }
             }
           } catch (e) {

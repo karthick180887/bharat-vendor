@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -61,7 +62,8 @@ class FirebaseMessagingService {
         FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
         // Get FCM token
-        _fcmToken = await _messaging.getToken();
+        _fcmToken =
+            await _messaging.getToken().timeout(const Duration(seconds: 8));
         debugPrint('[FCM] Token: $_fcmToken');
 
         // Register token with backend
@@ -95,9 +97,16 @@ class FirebaseMessagingService {
 
   /// Register FCM token with backend
   Future<void> registerToken() async {
-    _fcmToken ??= await _messaging.getToken();
-    if (_fcmToken != null) {
-      await _registerTokenWithBackend(_fcmToken!);
+    try {
+      _fcmToken ??=
+          await _messaging.getToken().timeout(const Duration(seconds: 8));
+      if (_fcmToken != null) {
+        await _registerTokenWithBackend(_fcmToken!);
+      }
+    } on TimeoutException {
+      debugPrint('[FCM] Token fetch timed out');
+    } catch (e) {
+      debugPrint('[FCM] Token fetch error: $e');
     }
   }
 
@@ -117,18 +126,20 @@ class FirebaseMessagingService {
       // Server URL for FCM token registration
       final url = Uri.parse('https://api.cabigo.in/vendor/fcm-token');
       
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $vendorToken',
-        },
-        body: json.encode({
-          'fcmToken': token,
-          'vendorId': vendorId,
-          'adminId': adminId,
-        }),
-      );
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $vendorToken',
+            },
+            body: json.encode({
+              'fcmToken': token,
+              'vendorId': vendorId,
+              'adminId': adminId,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         debugPrint('[FCM] ✅ Token registered with backend');
